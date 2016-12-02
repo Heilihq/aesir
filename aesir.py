@@ -20,6 +20,7 @@ logger.setLevel(loglevel)
 logger.addHandler(ch)
 
 allowed_org = os.getenv('ALLOWED_ORG', False)
+docker_api_version = os.getenv('DOCKER_API_VERSION', 'auto')
 
 
 def _github_auth_is_valid(req, resp, resource, params):
@@ -70,7 +71,7 @@ class BuildResource(object):
 
 
 def build_image(git_auth, image_name, git_repo, image_tag='latest', git_branch=None, git_directory=None):
-    cli = Client(base_url='unix://var/run/docker.sock')
+    cli = Client(base_url='unix://var/run/docker.sock', version=docker_api_version)
 
     if not git_repo.endswith('.git'):
         logger.debug('Adding .git to {}'.format(git_repo))
@@ -107,7 +108,7 @@ def build_image(git_auth, image_name, git_repo, image_tag='latest', git_branch=N
 
 
 def push_image(image_name, image_tag='latest'):
-    cli = Client(base_url='unix://var/run/docker.sock')
+    cli = Client(base_url='unix://var/run/docker.sock', version=docker_api_version)
 
     try:
         response = [line for line in cli.push(image_name + ':' + image_tag, stream=True)]
