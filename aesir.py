@@ -61,7 +61,8 @@ class BuildResource(object):
 
         if 'push' in req.query_string:
             logger.debug('Push the image to repo')
-            docker_push = push_image(post_body['docker_image'], post_body.get('docker_tag'))
+            docker_push = push_image(post_body['docker_image'], post_body.get('docker_tag'),
+                                     post_body.get('registry_user'), post_body.get('registry_password'))
             if docker_push:
                 logger.error('Push failed')
                 raise falcon.HTTPInternalServerError('Docker Push failed', docker_push)
@@ -107,10 +108,13 @@ def build_image(git_auth, image_name, git_repo, image_tag='latest', git_branch=N
         return None
 
 
-def push_image(image_name, image_tag='latest'):
+def push_image(image_name, image_tag='latest', registry_user=False, registry_pass=False):
     cli = Client(base_url='unix://var/run/docker.sock', version=docker_api_version)
 
     try:
+        if registry_user and registry_pass:
+            registry_url = image_name.split('/')[0]
+            response = [line for line in cli.login(registry_user, registry_pass, registry_url)]
         response = [line for line in cli.push(image_name + ':' + image_tag, stream=True)]
     except docker_error as msg:
         logger.error('Failed to push image:\n{}'.format(msg))
